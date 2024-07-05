@@ -7,7 +7,7 @@ CREATE TABLE "accounts" (
 );
 
 CREATE TABLE "entries" (
-    "id" bigserial PRIMARY KEY,
+   "id" bigserial PRIMARY KEY,
    "account_id" bigint,
    "amount" bigint NOT NULL,
    "created_at" timestamp with time zone NOT NULL DEFAULT (now())

@@ -22,4 +22,7 @@ migratedown:
 sqlc:
 	sqlc generate
 
+test:
+	go test -v -cover ./...
+
 .PHONY: postgres createdb createuser dropdb migrateup migratedown sqlc
