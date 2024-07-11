@@ -38,7 +38,6 @@ func (server *Server) createAccount(ctx *gin.Context) {
 
 	account, err := server.store.CreateAccount(ctx, arg)
 	if err != nil {
-		fmt.Println("burada")
 		var pgErr *pgconn.PgError
 		fmt.Println(err.Error())
 		if errors.As(err, &pgErr) {
