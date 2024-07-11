@@ -2,8 +2,10 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	db "github.com/umtdemr/simplebank/db/sqlc"
 	"net/http"
 )
@@ -36,6 +38,15 @@ func (server *Server) createAccount(ctx *gin.Context) {
 
 	account, err := server.store.CreateAccount(ctx, arg)
 	if err != nil {
+		fmt.Println("burada")
+		var pgErr *pgconn.PgError
+		fmt.Println(err.Error())
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				ctx.JSON(http.StatusForbidden, errorResponse(err))
+				return
+			}
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
