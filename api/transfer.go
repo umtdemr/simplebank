@@ -7,6 +7,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	db "github.com/umtdemr/simplebank/db/sqlc"
+	"github.com/umtdemr/simplebank/token"
 	"net/http"
 )
 
@@ -23,12 +24,20 @@ func (server *Server) createTransfer(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-
-	if !server.validAccount(ctx, req.FromAccountId, req.Currency) {
+	fromAccount, valid := server.validAccount(ctx, req.FromAccountId, req.Currency)
+	if !valid {
 		return
 	}
 
-	if !server.validAccount(ctx, req.ToAccountId, req.Currency) {
+	authPayload := ctx.MustGet(authPayloadKey).(*token.Payload)
+	if fromAccount.Owner != authPayload.Username {
+		err := errors.New("from doesn't belong to the authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+	
+	_, validToAccount := server.validAccount(ctx, req.ToAccountId, req.Currency)
+	if !validToAccount {
 		return
 	}
 	arg := db.TransferTxParams{
@@ -46,20 +55,20 @@ func (server *Server) createTransfer(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, result)
 }
 
-func (server *Server) validAccount(ctx *gin.Context, accountId int64, currency string) bool {
+func (server *Server) validAccount(ctx *gin.Context, accountId int64, currency string) (db.Account, bool) {
 	account, err := server.store.GetAccount(ctx, accountId)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return false
+			return account, false
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return false
+		return account, false
 	}
 	if account.Currency != currency {
 		err = fmt.Errorf("account [%d] currency mismatch: %s vs %s", account.ID, account.Currency, currency)
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return false
+		return account, false
 	}
-	return true
+	return account, true
 }
