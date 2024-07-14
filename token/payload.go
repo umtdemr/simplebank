@@ -43,3 +43,11 @@ func (payload *Payload) CreateClaims() jwt.MapClaims {
 		"iat":        payload.IssuedAt.Unix(),
 	}
 }
+
+// Valid checks if the token payload is valid or not
+func (payload *Payload) Valid() error {
+	if time.Now().After(payload.ExpiredAt) {
+		return ErrExpired
+	}
+	return nil
+}
