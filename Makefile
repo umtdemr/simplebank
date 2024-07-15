@@ -3,7 +3,7 @@ DB_USER=simple_bank
 DB_PASSWORD=simple_bank
 
 postgres:
-	docker run --name postgressi -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:16-alpine
+	docker run --network bank-network --name postgressi -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:16-alpine
 createdb: createuser
 	docker exec postgressi psql -U root -c "CREATE DATABASE ${DB_NAME};"
 	docker exec postgressi psql -U root -c "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER};"
