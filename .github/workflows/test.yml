@@ -37,6 +37,13 @@ jobs:
       
       - name: check containers
         run: docker ps -a
+        
+      - name: check directory
+        run: pwd
+        
+      - name: check in directory
+        run: ls -l
+
 
       - name: Setup postgres db
         run: make createdb
