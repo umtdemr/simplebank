@@ -2,12 +2,16 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/umtdemr/simplebank/api"
 	db "github.com/umtdemr/simplebank/db/sqlc"
+	"github.com/umtdemr/simplebank/gapi"
+	"github.com/umtdemr/simplebank/pb"
 	"github.com/umtdemr/simplebank/util"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"log"
+	"net"
 )
 
 func main() {
@@ -15,7 +19,6 @@ func main() {
 	if err != nil {
 		log.Fatal("cannot load config: ", err)
 	}
-	fmt.Println(config.DBSource, config.ServerAddress)
 	conn, err := pgxpool.New(context.Background(), config.DBSource)
 
 	if err != nil {
@@ -23,11 +26,40 @@ func main() {
 	}
 
 	store := db.NewStore(conn)
+	runGrpcServer(config, store)
+
+}
+func runGrpcServer(config util.Config, store db.Store) {
+	server, err := gapi.NewServer(config, store)
+
+	if err != nil {
+		log.Fatal("cannot create a server")
+	}
+
+	grpcServer := grpc.NewServer()
+	pb.RegisterSimpleBankServer(grpcServer, server)
+
+	reflection.Register(grpcServer)
+
+	// start the server
+	listener, err := net.Listen("tcp", config.GRPCServerAddress)
+	if err != nil {
+		log.Fatal("cannot create listener")
+	}
+
+	log.Printf("start gRPC server at %s", listener.Addr().String())
+	err = grpcServer.Serve(listener)
+	if err != nil {
+		log.Fatal("cannot start gRPC server")
+	}
+}
+
+func runGinServer(config util.Config, store db.Store) {
 	server, err := api.NewServer(config, store)
 	if err != nil {
 		log.Fatal("cannot create a server")
 	}
-	err = server.Start(config.ServerAddress)
+	err = server.Start(config.HTTPServerAddress)
 
 	if err != nil {
 		log.Fatal("cannot start the server")

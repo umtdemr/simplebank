@@ -1,6 +1,7 @@
 DB_NAME=simple_bank
 DB_USER=simple_bank
 DB_PASSWORD=simple_bank
+DB_URL=postgresql://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable
 
 postgres:
 	docker run --network bank-network --name postgressi -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:16-alpine
@@ -16,15 +17,19 @@ createuser:
 dropdb:
 	docker exec postgressi dropdb simple_bank
 migrateup:
-	migrate -path db/migration -database "postgresql://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" -verbose up
+	migrate -path db/migration -database "${DB_URL}" -verbose up
 migrateup1:
-	migrate -path db/migration -database "postgresql://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" -verbose up 1
+	migrate -path db/migration -database "${DB_URL}" -verbose up 1
 migratedown:
-	migrate -path db/migration -database "postgresql://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" -verbose down
+	migrate -path db/migration -database "${DB_URL}" -verbose down
 migratedown1:
-	migrate -path db/migration -database "postgresql://${DB_USER}:${DB_PASSWORD}@localhost:5432/${DB_NAME}?sslmode=disable" -verbose down 1
+	migrate -path db/migration -database "${DB_URL}" -verbose down 1
 sqlc:
 	sqlc generate
+db_docs:
+	dbdocs build doc/db.dbml
+db_schema:
+	dbml2sql --postgres -o doc/schema.sql doc/db.dbml
 
 test:
 	go test -v -cover ./...
@@ -32,5 +37,12 @@ server:
 	go run main.go
 mock:
 	mockgen -package mockdb -destination db/mock/store.go github.com/umtdemr/simplebank/db/sqlc Store
+proto:
+	rm -f pb/*.go
+	protoc  --proto_path=proto --go_out=pb --go_opt=paths=source_relative \
+        --go-grpc_out=pb --go-grpc_opt=paths=source_relative \
+        proto/*.proto
+evans:
+	evans --host localhost --port 9090 -r repl
 
-.PHONY: postgres createdb createuser dropdb migrateup migrateup1 migratedown migratedown1 sqlc server mock
+.PHONY: postgres createdb createuser dropdb migrateup migrateup1 migratedown migratedown1 sqlc db_docs db_schema server mock proto evans
