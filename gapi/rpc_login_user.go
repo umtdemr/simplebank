@@ -19,22 +19,22 @@ func (server *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (
 
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, status.Errorf(codes.NotFound, "cannot found user", err)
+			return nil, status.Errorf(codes.NotFound, "cannot found user: %s", err)
 		}
-		return nil, status.Errorf(codes.Internal, "cannot found user", err)
+		return nil, status.Errorf(codes.Internal, "cannot found user: %s", err)
 	}
 	err = util.CheckPassword(req.Password, user.HashedPassword)
 	if err != nil {
-		return nil, status.Errorf(codes.Unauthenticated, "invalid password", err)
+		return nil, status.Errorf(codes.Unauthenticated, "invalid password: %s", err)
 	}
 	accessToken, accessTokenPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.AccessTokenDuration)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "cannot create token", err)
+		return nil, status.Errorf(codes.Internal, "cannot create token: %s", err)
 	}
 
 	refreshToken, refreshPayload, err := server.tokenMaker.CreateToken(user.Username, server.config.RefreshTokenDuration)
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "cannot create token", err)
+		return nil, status.Errorf(codes.Internal, "cannot create token: %s", err)
 	}
 
 	refreshPayloadId := pgtype.UUID{Valid: true, Bytes: refreshPayload.ID}
@@ -50,14 +50,14 @@ func (server *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (
 	})
 
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "cannot create session", err)
+		return nil, status.Errorf(codes.Internal, "cannot create session %s", err)
 	}
 
 	sessionUuidBytes := session.ID.Bytes
 	sessionUuidStr := uuid.UUID(sessionUuidBytes).String()
 
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "an error has occurred", err)
+		return nil, status.Errorf(codes.Internal, "an error has occurred: %s", err)
 	}
 
 	rsp := &pb.LoginUserResponse{

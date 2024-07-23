@@ -32,10 +32,10 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		fmt.Println(err.Error())
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
-				return nil, status.Errorf(codes.AlreadyExists, "username already exists", err)
+				return nil, status.Errorf(codes.AlreadyExists, "username already exists: %s", err)
 			}
 		}
-		return nil, status.Errorf(codes.Internal, "failed to create user", err)
+		return nil, status.Errorf(codes.Internal, "failed to create user: %s", err)
 	}
 
 	rsp := &pb.CreateUserResponse{
