@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/umtdemr/simplebank/api"
@@ -35,7 +34,6 @@ func main() {
 
 }
 func runGrpcServer(config util.Config, store db.Store) {
-	fmt.Println("burada")
 	server, err := gapi.NewServer(config, store)
 
 	if err != nil {
@@ -92,6 +90,9 @@ func runGatewayServer(config util.Config, store db.Store) {
 	if err != nil {
 		log.Fatal("cannot create listener")
 	}
+
+	fs := http.FileServer(http.Dir("./doc/swagger"))
+	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs))
 
 	log.Printf("start HTTP gateway server at %s", listener.Addr().String())
 	err = http.Serve(listener, mux)
