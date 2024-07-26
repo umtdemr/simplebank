@@ -4,8 +4,10 @@ import (
 	"context"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rakyll/statik/fs"
 	"github.com/umtdemr/simplebank/api"
 	db "github.com/umtdemr/simplebank/db/sqlc"
+	_ "github.com/umtdemr/simplebank/doc/statik"
 	"github.com/umtdemr/simplebank/gapi"
 	"github.com/umtdemr/simplebank/pb"
 	"github.com/umtdemr/simplebank/util"
@@ -91,8 +93,13 @@ func runGatewayServer(config util.Config, store db.Store) {
 		log.Fatal("cannot create listener")
 	}
 
-	fs := http.FileServer(http.Dir("./doc/swagger"))
-	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs))
+	statikFS, err := fs.New()
+	if err != nil {
+		log.Fatal("cannot create statik fs")
+	}
+
+	swaggerHandler := http.StripPrefix("/swagger/", http.FileServer(statikFS))
+	mux.Handle("/swagger/", swaggerHandler)
 
 	log.Printf("start HTTP gateway server at %s", listener.Addr().String())
 	err = http.Serve(listener, mux)
