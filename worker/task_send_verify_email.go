@@ -3,10 +3,8 @@ package worker
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/hibiken/asynq"
-	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog/log"
 )
 
@@ -50,9 +48,11 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(ctx context.Cont
 	user, err := processor.store.GetUser(ctx, payload.Username)
 
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return fmt.Errorf("user doesn't exist: %w", asynq.SkipRetry)
-		}
+		// --- handle race conditions with trying again.
+		// so commented out these lines
+		//if errors.Is(err, pgx.ErrNoRows) {
+		//	return fmt.Errorf("user doesn't exist: %w", asynq.SkipRetry)
+		//}
 		return fmt.Errorf("failed to get user: %w", err)
 	}
 
