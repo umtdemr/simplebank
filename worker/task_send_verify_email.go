@@ -70,6 +70,7 @@ func (processor *RedisTaskProcessor) ProcessTaskSendVerifyEmail(ctx context.Cont
 
 	log.Info().
 		Str("verify_email", verifyEmail.SecretCode).
+		Str("verify_email_url", fmt.Sprintf("http://localhost:8080/v1/verify_email?email_id=%d&secret_code=%s", verifyEmail.ID, verifyEmail.SecretCode)).
 		Str("type", task.Type()).
 		Bytes("payload", task.Payload()).
 		Str("email", user.Email).
