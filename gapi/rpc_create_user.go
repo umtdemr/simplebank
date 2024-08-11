@@ -2,10 +2,7 @@ package gapi
 
 import (
 	"context"
-	"errors"
-	"fmt"
 	"github.com/hibiken/asynq"
-	"github.com/jackc/pgx/v5/pgconn"
 	db "github.com/umtdemr/simplebank/db/sqlc"
 	"github.com/umtdemr/simplebank/pb"
 	"github.com/umtdemr/simplebank/util"
@@ -27,6 +24,8 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to hash password: %s", err)
 	}
+
+	time.Sleep(10 * time.Second)
 
 	arg := db.CreateUserTXParams{
 		CreateUserParams: db.CreateUserParams{
@@ -50,12 +49,8 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 
 	txResult, err := server.store.CreateUserTX(ctx, arg)
 	if err != nil {
-		var pgErr *pgconn.PgError
-		fmt.Println(err.Error())
-		if errors.As(err, &pgErr) {
-			if pgErr.Code == "23505" {
-				return nil, status.Errorf(codes.AlreadyExists, "username already exists: %s", err)
-			}
+		if db.ErrCode(err) == db.UniqueViolation {
+			return nil, status.Errorf(codes.AlreadyExists, "username already exists: %s", err)
 		}
 		return nil, status.Errorf(codes.Internal, "failed to create user: %s", err)
 	}
@@ -63,7 +58,7 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 	rsp := &pb.CreateUserResponse{
 		User: convertUser(txResult.User),
 	}
-	fmt.Println(rsp, rsp.User.Username)
+
 	return rsp, nil
 }
 

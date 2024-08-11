@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 	"github.com/umtdemr/simplebank/token"
+	"github.com/umtdemr/simplebank/util"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -19,7 +20,7 @@ func addAuthorization(
 	username string,
 	duration time.Duration,
 ) {
-	tokenStr, payload, err := tokenMaker.CreateToken(username, duration)
+	tokenStr, payload, err := tokenMaker.CreateToken(username, util.DepositorRole, duration)
 	require.NoError(t, err)
 	require.NotEmpty(t, payload)
 	authorizationHeader := fmt.Sprintf("%s %s", authorizationType, tokenStr)
