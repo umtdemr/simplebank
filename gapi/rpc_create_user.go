@@ -2,7 +2,6 @@ package gapi
 
 import (
 	"context"
-	"fmt"
 	"github.com/hibiken/asynq"
 	db "github.com/umtdemr/simplebank/db/sqlc"
 	"github.com/umtdemr/simplebank/pb"
@@ -25,6 +24,8 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to hash password: %s", err)
 	}
+
+	time.Sleep(10 * time.Second)
 
 	arg := db.CreateUserTXParams{
 		CreateUserParams: db.CreateUserParams{
@@ -57,7 +58,7 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 	rsp := &pb.CreateUserResponse{
 		User: convertUser(txResult.User),
 	}
-	fmt.Println(rsp, rsp.User.Username)
+
 	return rsp, nil
 }
 
